@@ -64,14 +64,14 @@ static int ndDispatchPacket(NdConnection* conn)
 	/*
 	 * A packet was read, extract the data
 	 */
-	if (conn->dataLength <= ND_DATA_OFFSET)
+	if (conn->packetLength <= ND_DATA_OFFSET)
 	{
 		LOG_ERROR(("%d %s:%d not enough TCP data %d\n",
-			conn->tcpSocket, conn->clientInetAddr, conn->clientPort, conn->dataLength));
+			conn->tcpSocket, conn->clientInetAddr, conn->clientPort, conn->packetLength));
 		ndConnectionClose(conn);
 		return -1;
 	}
-	char* ptr = conn->readPacket + sizeof(short);
+	char* ptr = conn->receiveBuffer + sizeof(short);
 
 	// ARpoise always sends the protocol number followed by 10
 	//
@@ -109,7 +109,7 @@ static int ndDispatchPacket(NdConnection* conn)
 			conn->tcpSocket, conn->clientInetAddr, conn->clientPort, conn->forwardInetAddr, conn->forwardPort));
 	}
 
-	int dataLength = conn->dataLength - ND_DATA_OFFSET;
+	int dataLength = conn->packetLength - ND_DATA_OFFSET;
 	if (dataLength <= 3) // ARpoise always sends RQ\0 or AN\0
 	{
 		LOG_ERROR(("%d %s:%d not enough data %d\n",
@@ -134,10 +134,10 @@ static int ndDispatchPacket(NdConnection* conn)
 
 	if (byte1 == 'R' && byte2 == 'Q')
 	{
-		LOG_INFO(("< %s:%d %d ", conn->clientInetAddr, conn->clientPort, conn->dataLength));
-		for (int i = ND_DATA_OFFSET; i < conn->dataLength; i++)
+		LOG_INFO(("< %s:%d %d ", conn->clientInetAddr, conn->clientPort, conn->packetLength));
+		for (int i = ND_DATA_OFFSET; i < conn->packetLength; i++)
 		{
-			char c = conn->readPacket[i];
+			char c = conn->receiveBuffer[i];
 			LOG_CHAR((c < ' ' ? ' ' : c));
 		}
 		LOG_CHAR(('\n'));
@@ -150,10 +150,10 @@ static int ndDispatchPacket(NdConnection* conn)
 	}
 	else if (byte1 == 'A' && byte2 == 'N')
 	{
-		LOG_INFO(("< %s:%d %d ", conn->clientInetAddr, conn->clientPort, conn->dataLength));
-		for (int i = ND_DATA_OFFSET; i < conn->dataLength; i++)
+		LOG_INFO(("< %s:%d %d ", conn->clientInetAddr, conn->clientPort, conn->packetLength));
+		for (int i = ND_DATA_OFFSET; i < conn->packetLength; i++)
 		{
-			char c = conn->readPacket[i];
+			char c = conn->receiveBuffer[i];
 			LOG_CHAR((c < ' ' ? ' ' : c));
 		}
 		LOG_CHAR(('\n'));
@@ -375,7 +375,7 @@ void ndDispatchLoop()
 					break;
 #endif
 				}
-				conn->lastTcpReceiveTime = time(NULL);
+				conn->lastReceiveTime = time(NULL);
 				if (ndDispatchPacket(conn) < 0)
 				{
 					/*

@@ -55,11 +55,11 @@ unsigned int ndConnectionParseArguments(NdConnection* conn)
 
 	// Parse the entire buffer received
 	//
-	for (int offset = start; offset < conn->dataLength; offset++)
+	for (int offset = start; offset < conn->packetLength; offset++)
 	{
 		// A '\0' byte terminates the argument string
 		//
-		if (!conn->readPacket[offset])
+		if (!conn->receiveBuffer[offset])
 		{
 			if (offset == start)
 			{
@@ -67,7 +67,7 @@ unsigned int ndConnectionParseArguments(NdConnection* conn)
 			}
 			else
 			{
-				ndArguments[n++] = conn->readPacket + start;
+				ndArguments[n++] = conn->receiveBuffer + start;
 			}
 			offset = start = offset + 1;
 		}
@@ -88,7 +88,7 @@ unsigned int ndConnectionParseArguments(NdConnection* conn)
 int ndConnectionSend(NdConnection* conn, char* buffer, int size)
 {
 	int rc;
-	int len;
+	int length;
 
 	if (conn->tcpSocket < 0)
 	{
@@ -98,23 +98,23 @@ int ndConnectionSend(NdConnection* conn, char* buffer, int size)
 	/*
 	 * If there are some bytes buffered for this connection
 	 */
-	if (conn->tcpBuffer && (len = conn->tcpBufferLen - conn->tcpBufferStart))
+	if (conn->sendBuffer && (length = conn->sendBufferLength - conn->sendBufferStart))
 	{
-		rc = tcpPacketSend(conn->tcpSocket, conn->tcpBuffer + conn->tcpBufferStart, len);
+		rc = tcpPacketSend(conn->tcpSocket, conn->sendBuffer + conn->sendBufferStart, length);
 		LOG_TRACE(("%d %s:%d sent %d, rc %d\n",
-			conn->tcpSocket, conn->clientInetAddr, conn->clientPort, len, rc));
+			conn->tcpSocket, conn->clientInetAddr, conn->clientPort, length, rc));
 
 		if (rc > 0)
 		{
-			conn->lastTCPSendTime = time(NULL);
+			conn->lastSendTime = time(NULL);
 			conn->bytesSent += rc;
 		}
 
-		if (rc == len)
+		if (rc == length)
 		{
-			PBL_PROCESS_FREE(conn->tcpBuffer);
-			conn->tcpBufferLen = 0;
-			conn->tcpBufferStart = 0;
+			PBL_PROCESS_FREE(conn->sendBuffer);
+			conn->sendBufferLength = 0;
+			conn->sendBufferStart = 0;
 
 			conn->packetsSent++;
 			tcpPacketSentStatistics(rc);
@@ -122,7 +122,7 @@ int ndConnectionSend(NdConnection* conn, char* buffer, int size)
 		}
 		else if (rc >= 0)
 		{
-			conn->tcpBufferStart += rc;
+			conn->sendBufferStart += rc;
 
 			/*
 			 * Because the buffer is not empty,
@@ -163,7 +163,7 @@ int ndConnectionSend(NdConnection* conn, char* buffer, int size)
 
 	if (rc > 0)
 	{
-		conn->lastTCPSendTime = time(NULL);
+		conn->lastSendTime = time(NULL);
 		conn->bytesSent += rc;
 	}
 
@@ -181,13 +181,13 @@ int ndConnectionSend(NdConnection* conn, char* buffer, int size)
 		/*
 		 * Buffer the bytes that were not sent
 		 */
-		conn->tcpBuffer = pblProcessMemdup(NULL, buffer + rc, size - rc);
-		if (conn->tcpBuffer)
+		conn->sendBuffer = pblProcessMemdup(NULL, buffer + rc, size - rc);
+		if (conn->sendBuffer)
 		{
-			conn->tcpBufferStart = 0;
-			conn->tcpBufferLen = size - rc;
+			conn->sendBufferStart = 0;
+			conn->sendBufferLength = size - rc;
 			LOG_TRACE(("%d %s:%d buffered %d bytes,\n",
-				conn->tcpSocket, conn->clientInetAddr, conn->clientPort, conn->tcpBufferLen));
+				conn->tcpSocket, conn->clientInetAddr, conn->clientPort, conn->sendBufferLength));
 		}
 		return 0;
 	}
@@ -321,43 +321,42 @@ int ndConnectionRead(NdConnection* conn, char* buf, int size)
  */
 int ndConnectionReadPacket(NdConnection* conn)
 {
-	int rc = 0;
-	int missingBytes = 0;
-	unsigned short shortval;
-	conn->dataLength = 0;
+	int bytesMissing = 0;
+	unsigned short packetLengthAsShort;
+	conn->packetLength = 0;
 
-	if (conn->expectedBytes)
+	if (conn->bytesExpected)
 	{
-		missingBytes = conn->expectedBytes - conn->bytesRead;
+		bytesMissing = conn->bytesExpected - conn->bytesRead;
 	}
 	else
 	{
-		missingBytes = 4 - conn->bytesRead;
+		bytesMissing = 4 - conn->bytesRead;
 	}
 
-	if (missingBytes < 0)
+	if (bytesMissing < 0)
 	{
 		LOG_ERROR(("%d %s:%d missing bytes is negative %d, bytes read %d\n",
-			conn->tcpSocket, conn->clientInetAddr, conn->clientPort, missingBytes, conn->bytesRead));
+			conn->tcpSocket, conn->clientInetAddr, conn->clientPort, bytesMissing, conn->bytesRead));
 		ndConnectionClose(conn);
 		return -1;
 	}
 
-	if (conn->bytesRead + missingBytes >= (int)sizeof(conn->readPacket) - 1)
+	if (conn->bytesRead + bytesMissing >= (int)sizeof(conn->receiveBuffer) - 1)
 	{
 		LOG_ERROR(("%d %s:%d bytes read plus missing bytes too large %d, bytes read %d\n",
-			conn->tcpSocket, conn->clientInetAddr, conn->clientPort, conn->bytesRead + missingBytes, conn->bytesRead));
+			conn->tcpSocket, conn->clientInetAddr, conn->clientPort, conn->bytesRead + bytesMissing, conn->bytesRead));
 		ndConnectionClose(conn);
 		return -1;
 	}
 
-	rc = ndConnectionRead(conn, conn->readPacket + conn->bytesRead, missingBytes);
+	int rc = ndConnectionRead(conn, conn->receiveBuffer + conn->bytesRead, bytesMissing);
 	if (rc <= 0)
 	{
 		return rc;
 	}
 
-	if (!conn->expectedBytes)
+	if (!conn->bytesExpected)
 	{
 		if (conn->bytesRead < 4)
 		{
@@ -367,8 +366,8 @@ int ndConnectionReadPacket(NdConnection* conn)
 			return 0;
 		}
 
-		char* ptr = conn->readPacket;
-		tcpPacketExtract2Byte(&shortval, &ptr);
+		char* ptr = conn->receiveBuffer;
+		tcpPacketExtract2Byte(&packetLengthAsShort, &ptr);
 
 		// ARpoise always sends the protocol number followed by 10
 		//
@@ -392,32 +391,32 @@ int ndConnectionReadPacket(NdConnection* conn)
 		/*
 		 * Try to read the complete packet
 		 */
-		conn->expectedBytes = 2 + shortval;
-		if (conn->expectedBytes >= (int)sizeof(conn->readPacket) - 1)
+		conn->bytesExpected = 2 + packetLengthAsShort;
+		if (conn->bytesExpected >= (int)sizeof(conn->receiveBuffer) - 1)
 		{
 			LOG_ERROR(("%d %s:%d packet too large %d, bytes read %d\n",
-				conn->tcpSocket, conn->clientInetAddr, conn->clientPort, conn->expectedBytes, conn->bytesRead));
+				conn->tcpSocket, conn->clientInetAddr, conn->clientPort, conn->bytesExpected, conn->bytesRead));
 			ndConnectionClose(conn);
 			return -1;
 		}
-		if (conn->expectedBytes < 0)
+		if (conn->bytesExpected < 0)
 		{
 			LOG_ERROR(("%d %s:%d expected bytes is negative %d, bytes read %d\n",
-				conn->tcpSocket, conn->clientInetAddr, conn->clientPort, missingBytes, conn->bytesRead));
+				conn->tcpSocket, conn->clientInetAddr, conn->clientPort, bytesMissing, conn->bytesRead));
 			ndConnectionClose(conn);
 			return -1;
 		}
 
-		missingBytes = conn->expectedBytes - conn->bytesRead;
-		if (missingBytes < 0)
+		bytesMissing = conn->bytesExpected - conn->bytesRead;
+		if (bytesMissing < 0)
 		{
 			LOG_ERROR(("%d %s:%d missing bytes is negative %d, bytes read %d\n",
-				conn->tcpSocket, conn->clientInetAddr, conn->clientPort, missingBytes, conn->bytesRead));
+				conn->tcpSocket, conn->clientInetAddr, conn->clientPort, bytesMissing, conn->bytesRead));
 			ndConnectionClose(conn);
 			return -1;
 		}
 
-		rc = ndConnectionRead(conn, conn->readPacket + conn->bytesRead, missingBytes);
+		rc = ndConnectionRead(conn, conn->receiveBuffer + conn->bytesRead, bytesMissing);
 		if (rc <= 0)
 		{
 			return rc;
@@ -427,25 +426,22 @@ int ndConnectionReadPacket(NdConnection* conn)
 	/*
 	 * If not all bytes are read
 	 */
-	if (conn->bytesRead < conn->expectedBytes)
+	if (conn->bytesRead < conn->bytesExpected)
 	{
 		return 0;
 	}
 
-	/*
-	 * We read the entire TCP packet
-	 */
 	conn->packetsReceived++;
-	conn->readPacket[conn->bytesRead] = 0;
-	tcpPacketReadStatistics(rc = conn->bytesRead);
+	conn->receiveBuffer[conn->bytesRead] = 0;
+	tcpPacketReadStatistics(conn->packetLength = conn->bytesRead);
 
 	/*
 	 * Reset the buffer structure
 	 */
 	conn->bytesRead = 0;
-	conn->expectedBytes = 0;
+	conn->bytesExpected = 0;
 
-	return conn->dataLength = rc;
+	return conn->packetLength;
 }
 
 /*
@@ -515,7 +511,7 @@ void ndConnectionClose(NdConnection* conn)
 	PBL_PROCESS_FREE(conn->SCU);
 	PBL_PROCESS_FREE(conn->clientInetAddr);
 	PBL_PROCESS_FREE(conn->forwardInetAddr);
-	PBL_PROCESS_FREE(conn->tcpBuffer);
+	PBL_PROCESS_FREE(conn->sendBuffer);
 	PBL_PROCESS_FREE(conn);
 
 	if (tcpSocket >= 0)
@@ -596,7 +592,7 @@ NdConnection* ndConnectionCreate(int listenSocket)
 		}
 
 		pbl_LongToHexString((unsigned char*)conn->id, conn->tcpSocket);
-		conn->startTime = conn->lastTcpReceiveTime = time(NULL);
+		conn->startTime = conn->lastReceiveTime = time(NULL);
 
 		if (tcpPacketSocketSetNonBlocking(conn->tcpSocket, TRUE))
 		{
@@ -656,8 +652,8 @@ void ndConnectionCheckIdleConnections()
 		NdConnection* conn = NULL;
 		while ((conn = ndConnectionMapNext(&iterator)))
 		{
-			if (now - conn->lastTcpReceiveTime > ND_TIMEOUT_SECONDS / 4
-				&& now - conn->lastTCPSendTime > ND_TIMEOUT_SECONDS / 4)
+			if (now - conn->lastReceiveTime > ND_TIMEOUT_SECONDS / 4
+				&& now - conn->lastSendTime > ND_TIMEOUT_SECONDS / 4)
 			{
 				ndConnectionUpdateRequestId(conn);
 				char* arguments[5] = { 0 };
@@ -667,9 +663,9 @@ void ndConnectionCheckIdleConnections()
 				arguments[3] = "PING";
 				arguments[4] = NULL;
 				ndConnectionSendArguments(conn, arguments, 4);
-				conn->lastTCPSendTime = time(NULL);
+				conn->lastSendTime = time(NULL);
 			}
-			if (now - conn->lastTcpReceiveTime > ND_TIMEOUT_SECONDS)
+			if (now - conn->lastReceiveTime > ND_TIMEOUT_SECONDS)
 			{
 				LOG_INFO(("S %d %s:%d idle timeout\n",
 					conn->tcpSocket, conn->clientInetAddr, conn->clientPort));
@@ -721,7 +717,7 @@ int ndConnectionPrepareWriteSocketMask(fd_set* writeMask)
 		NdConnection* conn = NULL;
 		while ((conn = ndConnectionMapNext(&iterator)))
 		{
-			if (conn->tcpSocket >= 0 && conn->tcpBuffer && (conn->tcpBufferLen - conn->tcpBufferStart))
+			if (conn->tcpSocket >= 0 && conn->sendBuffer && (conn->sendBufferLength - conn->sendBufferStart))
 			{
 				FD_SET(conn->tcpSocket, writeMask);
 

@@ -86,6 +86,14 @@ extern "C" {
 
 #endif
 
+#ifndef FALSE
+#define FALSE               0
+#endif
+
+#ifndef TRUE
+#define TRUE                1
+#endif
+
 #define pblRand() ((rand()<<24) ^ (rand()<<16) ^ (rand()<<8) ^ rand())
 
 #ifdef _WIN32

@@ -12,3 +12,5 @@
 /src/ndserver.sln
 /src/ndserver.vcxproj.filters
 /src/ndserver.vcxproj.user
+/exports
+*.o

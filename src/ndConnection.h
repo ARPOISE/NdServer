@@ -33,49 +33,52 @@
 extern "C" {
 #endif
 
+#define ND_DATA_OFFSET 10
 #define ND_ID_LENGTH 8
 #define ND_RECEIVE_BUFFER_LENGTH (8 * 1024)
 
 	typedef struct NdConnection_s
 	{
-		/* connection attributes */
-		int protocolNumber;
-		int requestCode;
-
-		/* client values */
-		unsigned int clientIp;
-		unsigned short clientPort;
-		char* clientInetAddr;
-
-		char* NNM;
-		char* SCN;
-		char* SCU;
-
-		unsigned int forwardIp;
-		unsigned short forwardPort;
-		char* forwardInetAddr;
-
 		/* infrastructure */
 		int  tcpSocket;
 		char id[ND_ID_LENGTH + 1];
 		char clientId[ND_ID_LENGTH + 1];
 		char requestId[ND_ID_LENGTH + 1];
 
+		/* connection attributes */
+		int protocolNumber;
+		int requestCode;
+
+		/* client attributes */
+		unsigned int clientIp;
+		unsigned short clientPort;
+		char* clientInetAddr;
+
+		/* client values */
+		char* NNM;
+		char* SCN;
+		char* SCU;
+
+		/* forward attributes, only when forwarding is active */
+		unsigned int forwardIp;
+		unsigned short forwardPort;
+		char* forwardInetAddr;
+
 		/* keep alive */
 		time_t startTime;
-		time_t lastTcpReceiveTime;
-		time_t lastTCPSendTime;
+		time_t lastReceiveTime;
+		time_t lastSendTime;
 
 		/* attributes for non-blocking reading */
-		char readPacket[ND_RECEIVE_BUFFER_LENGTH];
-		int dataLength;
+		char receiveBuffer[ND_RECEIVE_BUFFER_LENGTH];
+		int packetLength;
 		int bytesRead;
-		int expectedBytes;
+		int bytesExpected;
 
 		/* attributes for non-blocking writing */
-		char* tcpBuffer;
-		int tcpBufferLen;
-		int tcpBufferStart;
+		char* sendBuffer;
+		int sendBufferLength;
+		int sendBufferStart;
 
 		/* attributes for statistics */
 		unsigned long packetsReceived;

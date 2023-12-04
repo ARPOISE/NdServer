@@ -36,16 +36,6 @@ extern "C" {
 #include "ndConnection.h"
 #include "pbl.h"
 
-#ifndef FALSE
-#define FALSE               0
-#endif
-
-#ifndef TRUE
-#define TRUE                1
-#endif
-
-#define ND_DATA_OFFSET  	            10
-
 	typedef struct NdScene_s
 	{
 		char id[ND_ID_LENGTH + 1];
