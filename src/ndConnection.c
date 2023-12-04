@@ -37,6 +37,9 @@
 extern PblMap* ndConnectionMap;
 extern NdConnection* ndConnectionMapNext(PblIterator* iterator);
 
+unsigned long ndConnectionsTotal = 0;
+unsigned long ndConnectionsAdded = 0;
+
 static fd_set _CurrentMask;
 static int _MaxSocket;
 static int _NofArguments = 0;
@@ -574,50 +577,54 @@ NdConnection* ndConnectionCreate(int listenSocket)
 		return NULL;
 	}
 
-	NdConnection* conn = NULL;
-	if ((conn = pblProcessMalloc(function, sizeof(NdConnection))))
+	NdConnection* conn = pblProcessMalloc(function, sizeof(NdConnection));
+	if (!conn)
 	{
-		conn->tcpSocket = newSocket;
-
-		conn->clientIp = clientIp;
-		conn->clientPort = clientPort;
-		conn->clientInetAddr = pblProcessStrdup(function, clientInetAddr);
-		if (!conn->clientInetAddr)
-		{
-			LOG_ERROR(("%s: could not create client internet address, out of memory, pbl_errno %d.\n",
-				function, pbl_errno));
-
-			ndConnectionClose(conn);
-			return NULL;
-		}
-
-		pbl_LongToHexString((unsigned char*)conn->id, conn->tcpSocket);
-		conn->startTime = conn->lastReceiveTime = time(NULL);
-
-		if (tcpPacketSocketSetNonBlocking(conn->tcpSocket, TRUE))
-		{
-			LOG_ERROR(("%s: failed to set socket %d to non blocking, errno %d\n",
-				function, conn->tcpSocket, TCP_ERRNO));
-
-			ndConnectionClose(conn);
-			return NULL;
-		}
-
-		if (ndConnectionMapAdd(conn) < 0)
-		{
-			ndConnectionClose(conn);
-			return NULL;
-		}
-
-		/*
-		 * Add socket to read mask
-		 */
-		FD_SET(conn->tcpSocket, &_CurrentMask);
-		if (conn->tcpSocket > _MaxSocket)
-		{
-			_MaxSocket = conn->tcpSocket;
-		}
+		return NULL;
 	}
+
+	conn->startTime = conn->lastReceiveTime = time(NULL);
+	conn->tcpSocket = newSocket;
+	pbl_LongToHexString((unsigned char*)conn->id, conn->tcpSocket);
+	conn->clientIp = clientIp;
+	conn->clientPort = clientPort;
+
+	conn->clientInetAddr = pblProcessStrdup(function, clientInetAddr);
+	if (!conn->clientInetAddr)
+	{
+		LOG_ERROR(("%s: could not create client internet address, out of memory, pbl_errno %d.\n",
+			function, pbl_errno));
+
+		ndConnectionClose(conn);
+		return NULL;
+	}
+
+	if (tcpPacketSocketSetNonBlocking(conn->tcpSocket, TRUE))
+	{
+		LOG_ERROR(("%s: failed to set socket %d to non blocking, errno %d\n",
+			function, conn->tcpSocket, TCP_ERRNO));
+
+		ndConnectionClose(conn);
+		return NULL;
+	}
+
+	if (ndConnectionMapAdd(conn) < 0)
+	{
+		ndConnectionClose(conn);
+		return NULL;
+	}
+
+	/*
+	 * Add socket to read mask
+	 */
+	FD_SET(conn->tcpSocket, &_CurrentMask);
+	if (conn->tcpSocket > _MaxSocket)
+	{
+		_MaxSocket = conn->tcpSocket;
+	}
+
+	ndConnectionsTotal++;
+	ndConnectionsAdded++;
 	return conn;
 }
 

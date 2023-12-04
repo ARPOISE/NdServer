@@ -45,7 +45,7 @@ extern "C" {
 
 	} NdScene;
 
-	extern char** ndArguments;
+	extern unsigned long ndScenesTotal;
 
 	extern void ndDispatchInit();
 	extern void ndDispatchExit();

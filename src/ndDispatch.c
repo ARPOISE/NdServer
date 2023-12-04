@@ -242,7 +242,8 @@ void ndDispatchLoop()
 			lastPeriodicTime = now;
 
 			int n = ndConnectionMapNofConnections();
-			LOG_INFO(("C CUR %lu ADD %lu DEL %lu \n", n, ndConnectionsAdded, ndConnectionsRemoved));
+			LOG_INFO(("C %d A %lu D %lu T %lu S %lu\n",
+				n, ndConnectionsAdded, ndConnectionsRemoved, ndConnectionsTotal, ndScenesTotal));
 
 			if (n > 0 || ndConnectionsAdded > 0 || ndConnectionsRemoved > 0)
 			{
@@ -319,7 +320,8 @@ void ndDispatchLoop()
 				continue;
 			}
 			LOG_INFO(("S %d %s:%d, N %d\n",
-				conn->tcpSocket, conn->clientInetAddr, conn->clientPort, ndConnectionMapNofConnections()));
+				conn->tcpSocket, conn->clientInetAddr,
+				conn->clientPort, ndConnectionMapNofConnections()));
 		}
 
 		if (writeMaskPtr)

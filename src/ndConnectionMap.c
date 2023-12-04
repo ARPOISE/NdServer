@@ -33,8 +33,7 @@
 #include "ndConnection.h"
 
 PblMap* ndConnectionMap = NULL;
-int ndConnectionsAdded = 0;
-int ndConnectionsRemoved = 0;
+unsigned long ndConnectionsRemoved = 0;
 
 /*
  * Return the number of open connections.
@@ -111,7 +110,6 @@ int ndConnectionMapAdd(NdConnection* conn)
 			function, conn->tcpSocket));
 		ndConnectionClose(result);
 	}
-	ndConnectionsAdded++;
 	return 0;
 }
 

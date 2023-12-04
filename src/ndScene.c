@@ -34,6 +34,7 @@
 
 static PblMap* _SceneMap = NULL;
 static PblMap* _SceneIdMap = NULL;
+unsigned long ndScenesTotal = 0;
 
 /*
  * Return the number of connections in the scene.
@@ -145,6 +146,7 @@ NdScene* tcpSceneCreate(NdConnection* conn)
 		tcpSceneClose(scene);
 		return NULL;
 	}
+	ndScenesTotal++;
 	return scene;
 }
 

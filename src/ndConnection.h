@@ -26,8 +26,8 @@
  * Peter Graf, see www.mission-base.com/peter/
  * ARpoise, see www.ARpoise.com/
  */
-#ifndef _TCP_CONNECTION_H_
-#define _TCP_CONNECTION_H_
+#ifndef _ND_CONNECTION_H_
+#define _ND_CONNECTION_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -88,8 +88,10 @@ extern "C" {
 
 	} NdConnection;
 
-	extern int ndConnectionsAdded;
-	extern int ndConnectionsRemoved;
+	extern char** ndArguments;
+	extern unsigned long ndConnectionsTotal;
+	extern unsigned long ndConnectionsAdded;
+	extern unsigned long ndConnectionsRemoved;
 
 	extern NdConnection* ndConnectionCreate(int listenSocket);
 	extern NdConnection* ndConnectionMapFind(int socket);
