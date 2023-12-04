@@ -242,7 +242,7 @@ void ndDispatchLoop()
 			lastPeriodicTime = now;
 
 			int n = ndConnectionMapNofConnections();
-			LOG_INFO(("C %d A %lu D %lu T %lu S %lu\n",
+			LOG_INFO(("C %d A %lu D %lu TC %lu TS %lu\n",
 				n, ndConnectionsAdded, ndConnectionsRemoved, ndConnectionsTotal, ndScenesTotal));
 
 			if (n > 0 || ndConnectionsAdded > 0 || ndConnectionsRemoved > 0)

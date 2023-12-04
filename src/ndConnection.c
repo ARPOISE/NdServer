@@ -506,8 +506,8 @@ void ndConnectionClose(NdConnection* conn)
 	}
 
 	LOG_INFO(("L DEL CONN ID %s CLID %s\n",
-		conn->id ? conn->id : "?",
-		conn->clientId ? conn->clientId : "?"));
+		conn->id[0] ? conn->id : "?",
+		conn->clientId[0] ? conn->clientId : "?"));
 
 	PBL_PROCESS_FREE(conn->NNM);
 	PBL_PROCESS_FREE(conn->SCN);

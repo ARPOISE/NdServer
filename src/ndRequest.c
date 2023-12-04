@@ -42,7 +42,7 @@ static int ndHandleSet(NdConnection* conn)
 	static char* function = "ndHandleSet";
 	NdScene* scene = NULL;
 
-	if (conn->SCU && conn->clientId)
+	if (conn->SCU)
 	{
 		scene = ndSceneFind(conn->SCU);
 	}
@@ -160,7 +160,7 @@ static int ndHandleBye(NdConnection* conn)
 {
 	NdScene* scene = NULL;
 
-	if (conn->SCU && conn->clientId)
+	if (conn->SCU)
 	{
 		scene = ndSceneFind(conn->SCU);
 	}

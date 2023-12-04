@@ -105,8 +105,7 @@ NdScene* tcpSceneCreate(NdConnection* conn)
 	scene->sceneUrl = pblProcessStrdup(function, conn->SCU);
 	scene->sceneName = pblProcessStrdup(function, conn->SCN);
 
-	if (!scene->id || !*scene->id
-		|| !scene->sceneUrl || !*scene->sceneUrl
+	if (!scene->sceneUrl || !*scene->sceneUrl
 		|| !scene->sceneName || !*scene->sceneName)
 	{
 		LOG_ERROR(("%s: could not create scene data, out of memory, pbl_errno %d.\n",
@@ -156,11 +155,11 @@ NdScene* tcpSceneCreate(NdConnection* conn)
 void tcpSceneClose(NdScene* scene)
 {
 	LOG_INFO(("L DEL SCEN ID %s SCU %s SCN %s\n",
-		scene->id ? scene->id : "?",
+		scene->id[0] ? scene->id : "?",
 		scene->sceneUrl ? scene->sceneUrl : "?",
 		scene->sceneName ? scene->sceneName : "?"));
 
-	if (_SceneIdMap && scene->id)
+	if (_SceneIdMap)
 	{
 		pblMapRemoveStr(_SceneIdMap, scene->id);
 	}
