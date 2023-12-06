@@ -14,3 +14,4 @@
 /src/ndserver.vcxproj.user
 /exports
 *.o
+/src/ndserver
