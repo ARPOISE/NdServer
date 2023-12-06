@@ -659,7 +659,8 @@ void ndConnectionCheckIdleConnections()
 		NdConnection* conn = NULL;
 		while ((conn = ndConnectionMapNext(&iterator)))
 		{
-			if (now - conn->lastReceiveTime > ND_TIMEOUT_SECONDS / 4
+			if (conn->packetsReceived > 0
+				&& now - conn->lastReceiveTime > ND_TIMEOUT_SECONDS / 4
 				&& now - conn->lastSendTime > ND_TIMEOUT_SECONDS / 4)
 			{
 				ndConnectionUpdateRequestId(conn);
