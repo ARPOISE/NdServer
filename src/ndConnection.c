@@ -48,6 +48,7 @@ static char* _Arguments[ND_RECEIVE_BUFFER_LENGTH + 1];
 static char _SendBuffer[ND_RECEIVE_BUFFER_LENGTH + 1];
 
 char** ndArguments = _Arguments;
+static char* _EmptyString = "";
 
 /*
  * Parse a packet into an array of char* variables.
@@ -67,7 +68,7 @@ unsigned int ndConnectionParseArguments(NdConnection* conn)
 		{
 			if (offset == start)
 			{
-				ndArguments[n++] = "";
+				ndArguments[n++] = _EmptyString;
 			}
 			else
 			{
@@ -524,7 +525,7 @@ void ndConnectionClose(NdConnection* conn)
 	if (tcpSocket >= 0)
 	{
 		LOG_INFO(("S %d %s:%d D %ld PR %ld BR %ld PS %ld BS %ld, N %d\n",
-			tcpSocket, hostnameForLog ? hostnameForLog : "", clientPort,
+			tcpSocket, hostnameForLog ? hostnameForLog : _EmptyString, clientPort,
 			(long)(time(NULL) - startTime),
 			packetsReceived, bytesReceived, packetsSent, bytesSent,
 			ndConnectionMapNofConnections()));
