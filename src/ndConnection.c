@@ -40,6 +40,7 @@ extern NdConnection* ndConnectionMapNext(PblIterator* iterator);
 unsigned long ndConnectionsTotal = 0;
 unsigned long ndConnectionsAdded = 0;
 
+static unsigned int _BadIp = 0;
 static fd_set _CurrentMask;
 static int _MaxSocket;
 static int _NofArguments = 0;
@@ -377,6 +378,7 @@ int ndConnectionReadPacket(NdConnection* conn)
 		conn->protocolNumber = *ptr++;
 		if (conn->protocolNumber != 1)
 		{
+			_BadIp = conn->clientIp;
 			LOG_ERROR(("%d %s:%d bad protocol number %d\n",
 				conn->tcpSocket, conn->clientInetAddr, conn->clientPort, conn->protocolNumber));
 			ndConnectionClose(conn);
@@ -385,6 +387,7 @@ int ndConnectionReadPacket(NdConnection* conn)
 		conn->requestCode = *ptr++;
 		if (conn->requestCode != 10)
 		{
+			_BadIp = conn->clientIp;
 			LOG_ERROR(("%d %s:%d bad request code %d\n",
 				conn->tcpSocket, conn->clientInetAddr, conn->clientPort, conn->requestCode));
 			ndConnectionClose(conn);
@@ -397,6 +400,7 @@ int ndConnectionReadPacket(NdConnection* conn)
 		conn->bytesExpected = 2 + packetLengthAsShort;
 		if (conn->bytesExpected >= (int)sizeof(conn->receiveBuffer) - 1)
 		{
+			_BadIp = conn->clientIp;
 			LOG_ERROR(("%d %s:%d packet too large %d, bytes read %d\n",
 				conn->tcpSocket, conn->clientInetAddr, conn->clientPort, conn->bytesExpected, conn->bytesRead));
 			ndConnectionClose(conn);
@@ -577,9 +581,20 @@ NdConnection* ndConnectionCreate(int listenSocket)
 		return NULL;
 	}
 
+	if(_BadIp == clientIp)
+	{
+		LOG_ERROR(("%s: rejecting connection from %s:%d\n",
+			function, clientInetAddr, clientPort));
+		tcpPacketCloseSocket(newSocket);
+		return NULL;
+	}
+
 	NdConnection* conn = pblProcessMalloc(function, sizeof(NdConnection));
 	if (!conn)
 	{
+		LOG_ERROR(("%s: could not create connection structure, out of memory, pbl_errno %d.\n",
+			function, pbl_errno));
+		tcpPacketCloseSocket(newSocket);
 		return NULL;
 	}
 
@@ -644,6 +659,7 @@ void ndConnectionUpdateRequestId(NdConnection* conn)
 void ndConnectionCheckIdleConnections()
 {
 	static char* function = "ndConnectionCheckIdleConnections";
+	_BadIp = 0;
 
 	while (ndConnectionMapNofConnections() > 0)
 	{
