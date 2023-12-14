@@ -534,7 +534,7 @@ void ndConnectionClose(NdConnection* conn)
 
 	if (scene && ndSceneNofConnections(scene) < 1)
 	{
-		tcpSceneClose(scene);
+		ndSceneClose(scene);
 	}
 
 	if (doRecalc && ndConnectionMap)

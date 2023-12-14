@@ -75,14 +75,15 @@ NdScene* ndSceneGet(char* sceneId)
 }
 
 static unsigned int _sceneId = 0x20000;
+
 /*
  * Create a new scene.
  *
  * Returns NULL if the scene could not be created.
  */
-NdScene* tcpSceneCreate(NdConnection* conn)
+NdScene* ndSceneCreate(NdConnection* conn)
 {
-	static char* function = "tcpSceneCreate";
+	static char* function = "ndSceneCreate";
 	NdScene* scene = NULL;
 
 	scene = (NdScene*)pblProcessMalloc(function, sizeof(NdScene));
@@ -97,7 +98,7 @@ NdScene* tcpSceneCreate(NdConnection* conn)
 	{
 		LOG_ERROR(("%s: could not create connection set, pbl_errno %d.\n",
 			function, pbl_errno));
-		tcpSceneClose(scene);
+		ndSceneClose(scene);
 		return NULL;
 	}
 
@@ -110,7 +111,7 @@ NdScene* tcpSceneCreate(NdConnection* conn)
 	{
 		LOG_ERROR(("%s: could not create scene data, out of memory, pbl_errno %d.\n",
 			function, pbl_errno));
-		tcpSceneClose(scene);
+		ndSceneClose(scene);
 		return NULL;
 	}
 
@@ -122,7 +123,7 @@ NdScene* tcpSceneCreate(NdConnection* conn)
 	{
 		LOG_ERROR(("%s: could not add scene to id map, pbl_errno %d.\n",
 			function, pbl_errno));
-		tcpSceneClose(scene);
+		ndSceneClose(scene);
 		return NULL;
 	}
 	if (!_SceneMap)
@@ -133,7 +134,7 @@ NdScene* tcpSceneCreate(NdConnection* conn)
 	{
 		LOG_ERROR(("%s: could not add scene to map, pbl_errno %d.\n",
 			function, pbl_errno));
-		tcpSceneClose(scene);
+		ndSceneClose(scene);
 		return NULL;
 	}
 
@@ -142,7 +143,7 @@ NdScene* tcpSceneCreate(NdConnection* conn)
 	{
 		LOG_ERROR(("%s: could not add connection to scene, pbl_errno %d.\n",
 			function, pbl_errno));
-		tcpSceneClose(scene);
+		ndSceneClose(scene);
 		return NULL;
 	}
 	ndScenesTotal++;
@@ -152,7 +153,7 @@ NdScene* tcpSceneCreate(NdConnection* conn)
 /*
  * Close a scene.
  */
-void tcpSceneClose(NdScene* scene)
+void ndSceneClose(NdScene* scene)
 {
 	LOG_INFO(("L DEL SCEN ID %s SCU %s SCN %s\n",
 		scene->id[0] ? scene->id : "?",

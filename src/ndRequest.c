@@ -37,9 +37,9 @@
   * rc = 0: success
   * rc < 0: error
   */
-static int ndHandleSet(NdConnection* conn)
+static int ndRequestHandleSet(NdConnection* conn)
 {
-	static char* function = "ndHandleSet";
+	static char* function = "ndRequestHandleSet";
 	NdScene* scene = NULL;
 
 	if (conn->SCU)
@@ -156,7 +156,7 @@ static int ndHandleSet(NdConnection* conn)
  * rc = 0: success
  * rc < 0: error
  */
-static int ndHandleBye(NdConnection* conn)
+static int ndRequestHandleBye(NdConnection* conn)
 {
 	NdScene* scene = NULL;
 
@@ -198,9 +198,9 @@ static int ndHandleBye(NdConnection* conn)
  * rc = 0: success
  * rc < 0: error
  */
-static int ndHandleEnter(NdConnection* conn)
+static int ndRequestHandleEnter(NdConnection* conn)
 {
-	static char* function = "ndHandleEnter";
+	static char* function = "ndRequestHandleEnter";
 
 	if (conn->SCU)
 	{
@@ -273,7 +273,7 @@ static int ndHandleEnter(NdConnection* conn)
 	NdScene* scene = ndSceneFind(conn->SCU);
 	if (!scene)
 	{
-		scene = tcpSceneCreate(conn);
+		scene = ndSceneCreate(conn);
 		if (!scene)
 		{
 			return -1;
@@ -287,7 +287,7 @@ static int ndHandleEnter(NdConnection* conn)
 		{
 			LOG_ERROR(("%s: could not add connection to scene, pbl_errno %d.\n",
 				function, pbl_errno));
-			tcpSceneClose(scene);
+			ndSceneClose(scene);
 			return -1;
 		}
 	}
@@ -344,11 +344,11 @@ int ndRequestHandle(NdConnection* conn)
 
 	if (!strcmp("SET", tag))
 	{
-		return ndHandleSet(conn);
+		return ndRequestHandleSet(conn);
 	}
 	if (!strcmp("ENTER", tag))
 	{
-		return ndHandleEnter(conn);
+		return ndRequestHandleEnter(conn);
 	}
 	if (!strcmp("PING", tag))
 	{
@@ -359,7 +359,7 @@ int ndRequestHandle(NdConnection* conn)
 	}
 	if (!strcmp("BYE", tag))
 	{
-		return ndHandleBye(conn);
+		return ndRequestHandleBye(conn);
 	}
 	return 0;
 }

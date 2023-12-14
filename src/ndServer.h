@@ -56,10 +56,10 @@ extern "C" {
 
 	extern int ndSceneNofConnections(NdScene* scene);
 	extern int ndSceneMapNofScenes();
-	extern NdScene* tcpSceneCreate(NdConnection* conn);
+	extern NdScene* ndSceneCreate(NdConnection* conn);
 	extern NdScene* ndSceneFind(char* sceneUrl);
 	extern NdScene* ndSceneGet(char* sceneId);
-	extern void tcpSceneClose(NdScene* scene);
+	extern void ndSceneClose(NdScene* scene);
 
 #ifdef __cplusplus
 }
