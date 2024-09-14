@@ -41,6 +41,9 @@ extern "C" {
 		char id[ND_ID_LENGTH + 1];
 		char* sceneUrl;
 		char* sceneName;
+		char* sceneKey;
+		char* sceneValue;
+
 		PblSet* connectionSet;
 
 	} NdScene;

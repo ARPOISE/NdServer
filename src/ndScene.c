@@ -171,6 +171,8 @@ void ndSceneClose(NdScene* scene)
 
 	PBL_PROCESS_FREE(scene->sceneUrl);
 	PBL_PROCESS_FREE(scene->sceneName);
+	PBL_PROCESS_FREE(scene->sceneKey);
+	PBL_PROCESS_FREE(scene->sceneValue);
 
 	if (scene->connectionSet)
 	{

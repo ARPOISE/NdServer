@@ -147,6 +147,27 @@ static int ndRequestHandleSet(NdConnection* conn)
 			}
 		}
 	}
+
+	if (strstr(value, "SCENE_VALUE"))
+	{
+		PBL_PROCESS_FREE(scene->sceneKey);
+		PBL_PROCESS_FREE(scene->sceneValue);
+
+		scene->sceneKey = pblProcessStrdup(function, key);
+		scene->sceneValue = pblProcessStrdup(function, value);
+
+		if (!scene->sceneKey || !*scene->sceneKey
+			|| !scene->sceneValue || !*scene->sceneValue)
+		{
+			LOG_ERROR(("%s: could not create scene key and value data, out of memory, pbl_errno %d.\n",
+				function, pbl_errno));
+			return 0;
+		}
+		else
+		{
+			LOG_INFO(("L VAL SCEN ID %s KEY %s VAL %s\n", scene->id, scene->sceneKey, scene->sceneValue));
+		}
+	}
 	return 0;
 }
 
@@ -301,7 +322,29 @@ static int ndRequestHandleEnter(NdConnection* conn)
 	ndArguments[8] = "NNM";
 	ndArguments[9] = conn->NNM;
 
-	return ndConnectionSendArguments(conn, ndArguments, 10);
+	int rc = ndConnectionSendArguments(conn, ndArguments, 10);
+
+	if (rc >= 0 && scene->sceneKey && scene->sceneValue)
+	{
+		ndArguments[0] = "RQ";
+
+		ndConnectionUpdateRequestId(conn);
+		ndArguments[1] = conn->requestId;
+		if (!ndArguments[1])
+		{
+			ndArguments[1] = "314";
+		}
+
+		ndArguments[2] = conn->id;
+		ndArguments[3] = "SET";
+		ndArguments[4] = "SCID";
+		ndArguments[5] = scene->id;
+		ndArguments[6] = scene->sceneKey;
+		ndArguments[7] = scene->sceneValue;
+
+		rc = ndConnectionSendArguments(conn, ndArguments, 8);
+	}
+	return rc;
 }
 
 /*
