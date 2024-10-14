@@ -473,11 +473,11 @@ void ndConnectionClose(NdConnection* conn)
 	int clientPort = conn->clientPort;
 
 	int tcpSocket = -1;
-	unsigned long packetsReceived;
-	unsigned long bytesReceived;
-	unsigned long packetsSent;
-	unsigned long bytesSent;
-	time_t startTime;
+	unsigned long packetsReceived = 0;
+	unsigned long bytesReceived = 0;
+	unsigned long packetsSent = 0;
+	unsigned long bytesSent = 0;
+	time_t startTime = 0;
 	NdScene* scene = NULL;
 
 	if (conn->tcpSocket >= 0)
@@ -510,9 +510,12 @@ void ndConnectionClose(NdConnection* conn)
 		conn->tcpSocket = -1;
 	}
 
-	LOG_INFO(("L DEL CONN ID %s CLID %s\n",
+	LOG_INFO(("L DEL CONN ID %s CLID %s DUR %ld PR %ld BR %ld PS %ld BS %ld, N %d\n",
 		conn->id[0] ? conn->id : "?",
-		conn->clientId[0] ? conn->clientId : "?"));
+		conn->clientId[0] ? conn->clientId : "?",
+		(long)(time(NULL) - startTime),
+		packetsReceived, bytesReceived, packetsSent, bytesSent,
+		ndConnectionMapNofConnections()));
 
 	PBL_PROCESS_FREE(conn->NNM);
 	PBL_PROCESS_FREE(conn->SCN);
