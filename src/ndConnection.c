@@ -510,7 +510,7 @@ void ndConnectionClose(NdConnection* conn)
 		conn->tcpSocket = -1;
 	}
 
-	LOG_INFO(("L DEL CONN ID %s CLID %s DUR %ld PR %ld BR %ld PS %ld BS %ld, N %d\n",
+	LOG_INFO(("L DEL CONN ID %s CLID %s DUR %ld, PR %ld BR %ld PS %ld BS %ld, N %d\n",
 		conn->id[0] ? conn->id : "?",
 		conn->clientId[0] ? conn->clientId : "?",
 		(long)(time(NULL) - startTime),
@@ -534,6 +534,15 @@ void ndConnectionClose(NdConnection* conn)
 			ndConnectionMapNofConnections()));
 	}
 	PBL_PROCESS_FREE(hostnameForLog);
+
+	if (scene)
+	{
+		scene->nofConnections++;
+		scene->packetsReceived += packetsReceived;
+		scene->bytesReceived += bytesReceived;
+		scene->packetsSent += packetsSent;
+		scene->bytesSent += bytesSent;
+	}
 
 	if (scene && ndSceneNofConnections(scene) < 1)
 	{

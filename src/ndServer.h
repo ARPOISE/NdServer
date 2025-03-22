@@ -46,6 +46,14 @@ extern "C" {
 
 		PblSet* connectionSet;
 
+		/* attributes for statistics */
+		time_t startTime;
+		int nofConnections;
+		unsigned long packetsReceived;
+		unsigned long bytesReceived;
+		unsigned long packetsSent;
+		unsigned long bytesSent;
+
 	} NdScene;
 
 	extern unsigned long ndScenesTotal;

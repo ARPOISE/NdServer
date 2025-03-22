@@ -299,7 +299,7 @@ static int ndRequestHandleEnter(NdConnection* conn)
 		{
 			return -1;
 		}
-		LOG_INFO(("L NEW SCEN ID %s SCU %s SCN %s\n", scene->id, scene->sceneUrl, scene->sceneName));
+		LOG_INFO(("L NEW SCEN ID %s SCU '%s' SCN '%s'\n", scene->id, scene->sceneUrl, scene->sceneName));
 	}
 	else
 	{

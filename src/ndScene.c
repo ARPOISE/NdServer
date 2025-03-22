@@ -93,6 +93,8 @@ NdScene* ndSceneCreate(NdConnection* conn)
 			function, pbl_errno));
 		return NULL;
 	}
+
+	scene->startTime = time(NULL);
 	scene->connectionSet = pblSetNewHashSet();
 	if (!scene->connectionSet)
 	{
@@ -155,10 +157,17 @@ NdScene* ndSceneCreate(NdConnection* conn)
  */
 void ndSceneClose(NdScene* scene)
 {
-	LOG_INFO(("L DEL SCEN ID %s SCU %s SCN %s\n",
+	LOG_INFO(("L DEL SCEN ID %s SCU '%s' SCN '%s' DUR %ld, PR %ld BR %ld PS %ld BS %ld, N %d\n",
 		scene->id[0] ? scene->id : "?",
 		scene->sceneUrl ? scene->sceneUrl : "?",
-		scene->sceneName ? scene->sceneName : "?"));
+		scene->sceneName ? scene->sceneName : "?",
+		(long)(time(NULL) - scene->startTime),
+		scene->packetsReceived,
+		scene->bytesReceived,
+		scene->packetsSent,
+		scene->bytesSent,
+		scene->nofConnections
+	));
 
 	if (_SceneIdMap)
 	{
